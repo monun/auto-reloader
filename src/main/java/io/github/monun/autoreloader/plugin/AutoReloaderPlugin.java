@@ -9,29 +9,26 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitScheduler;
 
 import java.io.File;
-import java.io.IOException;
 import java.lang.reflect.Field;
-import java.nio.file.Files;
 import java.util.Objects;
-import java.util.logging.Logger;
 
 public class AutoReloaderPlugin extends JavaPlugin {
-    private File updateFolder;
+    private File updateFile;
+
     private UpdateAction updateAction;
-    private int countdownTicks = 40;
+
+    private int countdownSeconds = 2;
 
     @Override
     public void onEnable() {
         Server server = getServer();
-        Logger logger = getLogger();
-
-        server.getPluginManager().clearPlugins();
 
         try {
             Field field = SimplePluginManager.class.getDeclaredField("updateDirectory");
             field.setAccessible(true);
-            updateFolder = (File) field.get(server.getPluginManager());
-            logger.info("Update directory: " + updateFolder.getPath());
+            File updateDirectory = (File) field.get(server.getPluginManager());
+            updateFile = new File(updateDirectory, "UPDATE");
+            updateFile.delete();
         } catch (Exception e) {
             e.printStackTrace();
             setEnabled(false);
@@ -41,59 +38,32 @@ public class AutoReloaderPlugin extends JavaPlugin {
         saveDefaultConfig();
         Configuration config = getConfig();
         updateAction = UpdateAction.valueOf(Objects.requireNonNull(config.getString("update-action")).toUpperCase());
-        countdownTicks = config.getInt("countdown-ticks");
+        countdownSeconds = config.getInt("countdown-seconds");
 
         BukkitScheduler scheduler = server.getScheduler();
-        scheduler.runTask(this, () -> {
-                    File[] files = updateFolder.listFiles(file -> file.isFile() && file.getName().endsWith(".jar"));
-                    if (files == null || files.length == 0) return;
-
-                    for (File file : files) {
-                        try {
-                            Files.delete(file.toPath());
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
-                        }
-                    }
-                }
-        );
-        scheduler.runTaskTimer(this, this::monitor, 10L, 10L);
+        scheduler.runTaskTimer(this, this::monitor, 20L, 20L);
     }
 
-    private int updateTicks = 0;
+    private boolean update = false;
+    private int updateSeconds = 0;
 
     private void monitor() {
-        if (updateTicks > 0) {
-            if (--updateTicks <= 0) {
+        if (update) {
+            if (--updateSeconds <= 0) {
                 Bukkit.dispatchCommand(Bukkit.getConsoleSender(), updateAction.commands);
             }
 
             return;
         }
 
-        File[] files = updateFolder.listFiles(file -> file.isFile() && file.getName().endsWith(".jar"));
+        if (updateFile.exists()) {
+            update = true;
+            updateSeconds = countdownSeconds;
 
-        if (files != null && files.length > 0) {
-            updateTicks = countdownTicks;
-
-            Server server = getServer();
-            server.broadcast(ChatColor.YELLOW + "There are plugin files to update.", "op");
-            server.broadcast(ChatColor.YELLOW + "Server will " + updateAction.message + " in " + (countdownTicks + 19) / 20 + " seconds", "op");
+            Bukkit.broadcastMessage(ChatColor.YELLOW + "UPDATE file has been detected.");
+            Bukkit.broadcastMessage(ChatColor.YELLOW + "Server will " + updateAction.message + " in " + updateSeconds + " seconds");
         }
     }
 }
 
 
-enum UpdateAction {
-    RELOAD("reload confirm", "reload"),
-    RESTART("restart", "restart"),
-    SHUTDOWN("stop", "shutdown");
-
-    public final String commands;
-    public final String message;
-
-    UpdateAction(String commands, String message) {
-        this.commands = commands;
-        this.message = message;
-    }
-}

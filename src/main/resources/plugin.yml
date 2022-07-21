@@ -1,3 +1,4 @@
 name: AutoReloader
 version: $version
 main: io.github.monun.autoreloader.plugin.AutoReloaderPlugin
+api-version: 1.13
