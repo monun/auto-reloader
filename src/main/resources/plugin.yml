@@ -1,6 +1,3 @@
 name: AutoReloader
 version: $version
-main: com.github.monun.autoreloader.plugin.AutoReloaderPlugin
-api-version: 1.13
-libraries:
-  - org.jetbrains.kotlin:kotlin-stdlib:1.5.21
+main: io.github.monun.autoreloader.plugin.AutoReloaderPlugin

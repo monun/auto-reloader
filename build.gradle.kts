@@ -1,26 +1,26 @@
-plugins {
-    kotlin("jvm") version "1.5.21"
-}
+import java.text.SimpleDateFormat
+import java.util.*
 
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(16))
-    }
+
+plugins {
+    java
 }
 
 repositories {
     mavenCentral()
-    maven(url = "https://papermc.io/repo/repository/maven-public/")
+    maven("https://hub.spigotmc.org/nexus/content/repositories/snapshots/")
+    maven("https://oss.sonatype.org/content/repositories/snapshots")
+    maven("https://oss.sonatype.org/content/repositories/central")
 }
 
 dependencies {
-    compileOnly("io.papermc.paper:paper-api:1.17.1-R0.1-SNAPSHOT")
+    compileOnly("org.spigotmc:spigot-api:1.19-R0.1-SNAPSHOT")
+}
 
-    implementation(kotlin("stdlib"))
-
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.7.2")
-    testImplementation("org.junit.jupiter:junit-jupiter-engine:5.7.2")
-    testImplementation("org.mockito:mockito-core:3.6.28")
+if ((version as String).endsWith("SNAPSHOT")) {
+    version = (version as String).replace("SNAPSHOT", SimpleDateFormat("yyMMdd.HHmmss").apply {
+        timeZone = TimeZone.getTimeZone("UTC")
+    }.format(Date()))
 }
 
 tasks {
@@ -30,21 +30,23 @@ tasks {
         }
     }
 
+    compileJava {
+        sourceCompatibility = "1.8"
+        targetCompatibility = "1.8"
+    }
+
     test {
         useJUnitPlatform()
     }
 
-    create<Jar>("paperJar") {
-        from(sourceSets["main"].output)
-        archiveBaseName.set("AutoReloader")
-        archiveVersion.set("") // For bukkit plugin update
+    register<Copy>("paperJar") {
+        from(jar)
 
-        doLast {
-            copy {
-                from(archiveFile)
-                val plugins = File(rootDir, ".debug/plugins/")
-                into(if (File(plugins, archiveFileName.get()).exists()) File(plugins, "update") else plugins)
-            }
-        }
+        val archiveBaseName = jar.get().archiveBaseName.get()
+        val plugins = File("./.debug-server/plugins")
+        val files = plugins.listFiles { file: File -> file.isFile && file.name.endsWith(".jar") } ?: emptyArray()
+
+        if (files.any { it.name.startsWith(archiveBaseName, true) }) into(File(plugins, "update"))
+        else into(plugins)
     }
 }
