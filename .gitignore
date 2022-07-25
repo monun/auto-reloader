@@ -10,8 +10,5 @@ build/
 !gradle-wrapper.jar
 !gradle-wrapper.properties
 
-# Debug server folder
-.debug-server/
-
-# BuildTools
-.buildtools/
+# Debug server
+.server/

@@ -1,9 +1,9 @@
 import java.text.SimpleDateFormat
 import java.util.*
 
-
 plugins {
     java
+    idea
 }
 
 repositories {
@@ -39,14 +39,25 @@ tasks {
         useJUnitPlatform()
     }
 
-    register<Copy>("paperJar") {
+    register<Copy>("testJar") {
+        val prefix = project.name
+        val plugins = file(".server/plugins")
+        val update = File(plugins, "update")
+        val regex = Regex("($prefix).*(.jar)")
+
         from(jar)
+        into(if (plugins.listFiles { _, it -> it.matches(regex) }?.isNotEmpty() == true) update else plugins)
 
-        val archiveBaseName = jar.get().archiveBaseName.get()
-        val plugins = File("./.debug-server/plugins")
-        val files = plugins.listFiles { file: File -> file.isFile && file.name.endsWith(".jar") } ?: emptyArray()
+        doFirst { update.deleteRecursively() }
+        doLast {
+            update.mkdirs()
+            File(update, "UPDATE").delete()
+        }
+    }
+}
 
-        if (files.any { it.name.startsWith(archiveBaseName, true) }) into(File(plugins, "update"))
-        else into(plugins)
+idea {
+    module {
+        excludeDirs.add(file(".server"))
     }
 }
