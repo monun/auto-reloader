@@ -6,8 +6,8 @@
 
 ---
 
-1. plugins/update/UPDATE 파일을 감시
-2. UPDATE 파일이 있다면
+1. plugins/update/RELOAD 파일을 감시
+2. RELOAD 파일이 삭제되면 
    * reload
    * restart (재시작 스크립트 필요)
    * shutdown
