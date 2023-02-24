@@ -6,13 +6,11 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Server;
 import org.bukkit.configuration.Configuration;
-import org.bukkit.plugin.SimplePluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitScheduler;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.lang.reflect.Field;
 import java.util.Objects;
 
 public class AutoReloaderPlugin extends JavaPlugin {
@@ -25,9 +23,7 @@ public class AutoReloaderPlugin extends JavaPlugin {
         Server server = getServer();
 
         try {
-            Field field = SimplePluginManager.class.getDeclaredField("updateDirectory");
-            field.setAccessible(true);
-            File updateDirectory = (File) field.get(server.getPluginManager());
+            File updateDirectory = server.getUpdateFolderFile();
             updateDirectory.mkdirs();
             reloadFile = new File(updateDirectory, "RELOAD");
 
